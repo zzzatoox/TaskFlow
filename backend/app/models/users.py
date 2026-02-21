@@ -1,11 +1,9 @@
 from sqlalchemy import create_engine, ForeignKey, String
-from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from typing import Optional
 
-
-class Base(DeclarativeBase):
-    pass
+from ..database import Base
 
 
 # users = [
@@ -33,7 +31,4 @@ class User(Base):
     patronymic: Mapped[Optional[str]] = mapped_column(String)
 
     def __repr__(self) -> str:
-        return f"User(id={self.id!r}), login={self.login!r}"
-
-
-engine = create_engine("postgresql+asyncpg://taskflow.db", echo=True)
+        return f"User(id={self.id!r}, login={self.login!r})"

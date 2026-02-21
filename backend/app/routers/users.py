@@ -1,50 +1,44 @@
 from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
-from schemas.users import UserIn, UserOutput
+from ..schemas.users import UserIn, UserOutput
+from ..models.users import User
+from sqlalchemy import select
+from ..dependecies import SessionDep
 
 
-users = [
-    {
-        "id": 1,
-        "email": "zzzatoox@mail.ru",
-        "login": "zzzatoox",
-        "password": "guzeevaTop123",
-        "last_name": "Лазарев",
-        "first_name": "Никита",
-        "patronymic": None,
-    }
-]
+router = APIRouter(tags=["users"])
 
 
-USER_INT = 2
-
-router = APIRouter()
-
-
-@router.post("/users/", response_model=UserOutput)
-async def register(user_obj: UserIn) -> Response:
-    global USER_INT
-    user = user_obj.model_dump()
-    user["id"] = USER_INT
-    USER_INT += 1
-    users.append(user)
+@router.post("/users", response_model=UserOutput)
+async def register(user_obj: UserIn, session: SessionDep) -> Response:
+    user = User(
+        email=user_obj.email,
+        login=user_obj.login,
+        password=user_obj.password.get_secret_value(),
+        last_name=user_obj.last_name,
+        first_name=user_obj.first_name,
+        patronymic=user_obj.patronymic if user_obj.patronymic else None,
+    )
+    session.add(user)
+    await session.commit()
 
     return JSONResponse(content={"message": "Success registration"})
 
 
-@router.get("/users/me")
-async def get_user_me():
-    pass
+# @router.get("/users/me")
+# async def get_user_me():
+#     pass
 
 
 @router.get("/users/{user_id}", response_model=UserOutput)
-async def get_user_by_id(user_id: int) -> UserOutput | Response:
-    for user in users:
-        if user.get("id") == user_id:
-            return user
-    return JSONResponse(status_code=404, content={"message": "User not found"})
+async def get_user_by_id(user_id: int, session: SessionDep) -> UserOutput | Response:
+    user = (await session.scalars(select(User).where(User.id == user_id))).first()
+    if not user:
+        return JSONResponse(content={"message": "User not found"}, status_code=404)
+    return user
 
 
 @router.get("/users")
-async def get_users() -> list[UserOutput]:
-    return users
+async def get_users(session: SessionDep) -> list[UserOutput]:
+    result = await session.scalars(select(User))
+    return result.all()
