@@ -4,17 +4,23 @@ from ..schemas.users import UserIn, UserOutput
 from ..models.users import User
 from sqlalchemy import select
 from ..dependecies import SessionDep
-
+from backend.app.utils.password_hashing import (
+    get_password_hash_async,
+    verify_password_async,
+)
 
 router = APIRouter(tags=["users"])
 
 
 @router.post("/users", response_model=UserOutput)
 async def register(user_obj: UserIn, session: SessionDep) -> Response:
+    password = user_obj.password.get_secret_value()
+    password_hash = await get_password_hash_async(password)
+
     user = User(
         email=user_obj.email,
         login=user_obj.login,
-        password=user_obj.password.get_secret_value(),
+        password_hash=password_hash,
         last_name=user_obj.last_name,
         first_name=user_obj.first_name,
         patronymic=user_obj.patronymic if user_obj.patronymic else None,

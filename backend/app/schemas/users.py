@@ -1,4 +1,12 @@
-from pydantic import BaseModel, EmailStr, PositiveInt, Field, SecretStr, field_validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    model_validator,
+    Field,
+    SecretStr,
+    field_validator,
+)
+from typing import Self
 
 
 class UserIn(BaseModel):
@@ -15,6 +23,12 @@ class UserIn(BaseModel):
     @classmethod
     def strip_and_capitalize(cls, value: str) -> str:
         return value.strip().capitalize()
+
+    @model_validator(mode="after")
+    def verify_passwords_match(self) -> Self:
+        if self.password.get_secret_value() != self.password_repeat.get_secret_value():
+            raise ValueError("Passwords do not match")
+        return self
 
 
 class UserOutput(BaseModel):
