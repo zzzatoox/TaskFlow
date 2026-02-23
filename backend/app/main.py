@@ -1,14 +1,17 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, status
+from fastapi.responses import JSONResponse
 from .database import engine
 from .models.users import Base
 
-from .dependecies import SessionDep
+from .dependencies import SessionDep
 from .routers.users import router as user_router
+from .routers.auth import router as auth_router
 
 
 app = FastAPI()
 
 app.include_router(user_router)
+app.include_router(auth_router)
 
 
 @app.get("/")
@@ -34,4 +37,7 @@ async def health_check(session: SessionDep):
         value = result.scalar()
         return {"status": "healthy", "check": value}
     except Exception as e:
-        return {"status": "unhealthy", "error": str(e)}
+        return JSONResponse(
+            content={"status": "unhealthy", "error": str(e)},
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+        )

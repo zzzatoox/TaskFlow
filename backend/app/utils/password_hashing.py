@@ -1,8 +1,10 @@
+import secrets
 from pwdlib import PasswordHash
 import asyncio
 
 
 password_hash = PasswordHash.recommended()
+DUMMY_HASH = password_hash.hash(secrets.token_hex(64))
 
 
 async def verify_password_async(plain_password: str, hashed_password: str) -> bool:

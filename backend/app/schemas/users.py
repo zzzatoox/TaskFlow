@@ -9,7 +9,7 @@ from pydantic import (
 from typing import Self
 
 
-class UserIn(BaseModel):
+class User(BaseModel):
     email: EmailStr
     login: str = Field(max_length=20)
     password: SecretStr = Field(min_length=8)
@@ -31,8 +31,25 @@ class UserIn(BaseModel):
         return self
 
 
+# TODO: нужна ли?
 class UserOutput(BaseModel):
     login: str
     last_name: str
     first_name: str
     patronymic: str | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class UserInDB(BaseModel):
+    id: int
+    email: EmailStr
+    login: str
+    password_hash: str
+    last_name: str
+    first_name: str
+    patronymic: str | None = None
+
+    class Config:
+        orm_mode = True

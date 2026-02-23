@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Response
 from fastapi.responses import JSONResponse
-from ..schemas.users import UserIn, UserOutput
-from ..models.users import User
+from ..schemas.users import User as UserSchema, UserOutput
+from ..models.users import User as UserModel
 from sqlalchemy import select
-from ..dependecies import SessionDep
+from ..dependencies import SessionDep, UserDep
 from backend.app.utils.password_hashing import (
     get_password_hash_async,
     verify_password_async,
@@ -12,12 +12,12 @@ from backend.app.utils.password_hashing import (
 router = APIRouter(tags=["users"])
 
 
-@router.post("/users", response_model=UserOutput)
-async def register(user_obj: UserIn, session: SessionDep) -> Response:
+@router.post("/users", response_model=None)
+async def register(user_obj: UserSchema, session: SessionDep) -> Response:
     password = user_obj.password.get_secret_value()
     password_hash = await get_password_hash_async(password)
 
-    user = User(
+    user = UserModel(
         email=user_obj.email,
         login=user_obj.login,
         password_hash=password_hash,
@@ -31,14 +31,16 @@ async def register(user_obj: UserIn, session: SessionDep) -> Response:
     return JSONResponse(content={"message": "Success registration"})
 
 
-# @router.get("/users/me")
-# async def get_user_me():
-#     pass
+@router.get("/users/me")
+async def get_user_me(user: UserDep):
+    return user
 
 
 @router.get("/users/{user_id}", response_model=UserOutput)
 async def get_user_by_id(user_id: int, session: SessionDep) -> UserOutput | Response:
-    user = (await session.scalars(select(User).where(User.id == user_id))).first()
+    user = (
+        await session.scalars(select(UserModel).where(UserModel.id == user_id))
+    ).first()
     if not user:
         return JSONResponse(content={"message": "User not found"}, status_code=404)
     return user
@@ -46,5 +48,5 @@ async def get_user_by_id(user_id: int, session: SessionDep) -> UserOutput | Resp
 
 @router.get("/users")
 async def get_users(session: SessionDep) -> list[UserOutput]:
-    result = await session.scalars(select(User))
+    result = await session.scalars(select(UserModel))
     return result.all()
