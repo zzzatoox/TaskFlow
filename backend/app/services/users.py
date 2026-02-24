@@ -3,7 +3,7 @@ from jwt import InvalidTokenError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 from backend.app.database import get_async_session
-from backend.app.models.users import User
+from backend.app.models.users import User as UserModel
 from backend.app.schemas.tokens import TokenData
 from backend.app.schemas.users import UserInDB
 
@@ -20,7 +20,9 @@ from backend.app.config import settings
 async def get_user(
     login: str, session: Annotated[AsyncSession, Depends(get_async_session)]
 ) -> UserInDB | None:
-    user = (await session.scalars(select(User).where(User.login == login))).first()
+    user = (
+        await session.scalars(select(UserModel).where(UserModel.login == login))
+    ).first()
     return UserInDB(**user.__dict__) if user else None
 
 
@@ -48,3 +50,19 @@ async def get_current_user(
     if user is None:
         raise credentials_exception
     return user
+
+
+async def get_all_users(session: Annotated[AsyncSession, Depends(get_async_session)]):
+    result = await session.scalars(select(UserModel))
+    return result.all()
+
+
+async def get_user_by_id(
+    user_id: int, session: Annotated[AsyncSession, Depends(get_async_session)]
+):
+    (await session.scalars(select(UserModel).where(UserModel.id == user_id))).first()
+
+
+async def register_user():
+    # TODO: подумать, что вынести из register сюда
+    pass
