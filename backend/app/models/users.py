@@ -1,7 +1,6 @@
-from sqlalchemy import create_engine, ForeignKey, String
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
-from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
-from typing import Optional
+from sqlalchemy import ForeignKey, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from typing import Optional, List
 
 from ..database import Base
 
@@ -16,6 +15,11 @@ class User(Base):
     last_name: Mapped[str] = mapped_column(String, nullable=False)
     first_name: Mapped[str] = mapped_column(String, nullable=False)
     patronymic: Mapped[Optional[str]] = mapped_column(String)
+
+    owned_tasks: Mapped[List["Task"]] = relationship("Task", back_populates="owner")
+    assigned_tasks: Mapped[List["Task"]] = relationship(
+        "Task", back_populates="executor"
+    )
 
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, login={self.login!r})"
