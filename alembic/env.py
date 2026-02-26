@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from backend.app.config import settings
 from backend.app.database import Base
 from backend.app.models.users import User
+from backend.app.models.tasks import Task
+from backend.app.models.priorities import Priority
+
 
 from alembic import context
 

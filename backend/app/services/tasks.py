@@ -18,8 +18,21 @@ async def get_all_tasks(session: Annotated[AsyncSession, Depends(get_async_sessi
     return result.all()
 
 
-async def get_task_by_id(session: Annotated[AsyncSession, Depends(get_async_session)]):
-    pass
+async def get_task_by_id(
+    task_id: int, session: Annotated[AsyncSession, Depends(get_async_session)]
+):
+    task = session.scalars(select(TaskModel).where(TaskModel.id == task_id)).first()
+    return task
+
+
+async def create_task(
+    task_data: dict, session: Annotated[AsyncSession, Depends(get_async_session)]
+):
+    task = TaskModel(**task_data)
+    session.add(task)
+    await session.commit()
+    await session.refresh(task)
+    return task
 
 
 # TODO: добавить функции с фильтрацией.
