@@ -10,6 +10,7 @@ from backend.app.database import Base
 from backend.app.models.users import User
 from backend.app.models.tasks import Task
 from backend.app.models.priorities import Priority
+from backend.app.models.statuses import Status
 
 
 from alembic import context

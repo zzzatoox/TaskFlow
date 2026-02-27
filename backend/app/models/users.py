@@ -9,12 +9,12 @@ class User(Base):
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
-    email: Mapped[str] = mapped_column(String(30), nullable=False)
-    login: Mapped[str] = mapped_column(String(20), nullable=False)
-    password_hash: Mapped[str] = mapped_column(String, nullable=False)
-    last_name: Mapped[str] = mapped_column(String, nullable=False)
-    first_name: Mapped[str] = mapped_column(String, nullable=False)
-    patronymic: Mapped[Optional[str]] = mapped_column(String)
+    email: Mapped[str] = mapped_column(String(320))
+    login: Mapped[str] = mapped_column(String(20))
+    password_hash: Mapped[str] = mapped_column(String(255))
+    last_name: Mapped[str] = mapped_column(String(64))
+    first_name: Mapped[str] = mapped_column(String(64))
+    patronymic: Mapped[Optional[str]] = mapped_column(String(64))
 
     owned_tasks: Mapped[List["Task"]] = relationship(
         "Task", back_populates="owner", foreign_keys="[Task.owner_id]"

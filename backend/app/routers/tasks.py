@@ -1,4 +1,4 @@
-from FastAPI import APIRouter
+from fastapi import APIRouter
 
 from backend.app.dependencies import SessionDep
 from backend.app.services.tasks import get_all_tasks, create_task as create_task_service

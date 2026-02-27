@@ -15,6 +15,7 @@ class Task(Base):
     owner_id: Mapped[int] = mapped_column(ForeignKey("users.id"))
     executor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     priority_id: Mapped[int] = mapped_column(ForeignKey("priorities.id"))
+    status_id: Mapped[int] = mapped_column(ForeignKey("statuses.id"))
     deadline: Mapped[datetime | None]
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     updated_at: Mapped[datetime] = mapped_column(
@@ -29,6 +30,7 @@ class Task(Base):
     )
 
     priority: Mapped["Priority"] = relationship("Priority", back_populates="tasks")
+    status: Mapped["Status"] = relationship("Status", back_populates="tasks")
 
     def __repr__(self) -> str:
         return f"Task(id={self.id!r}, title={self.title!r})"
