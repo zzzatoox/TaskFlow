@@ -30,11 +30,11 @@ from backend.app.config import settings
 
 async def get_user(
     login: str, session: Annotated[AsyncSession, Depends(get_async_session)]
-) -> UserResponse | None:
+) -> UserModel | None:
     user = (
         await session.scalars(select(UserModel).where(UserModel.login == login))
     ).first()
-    return UserResponse(**user.__dict__) if user else None
+    return user
 
 
 async def get_current_user(
@@ -60,7 +60,7 @@ async def get_current_user(
     user = await get_user(token_data.username, session)
     if user is None:
         raise credentials_exception
-    return user
+    return UserResponse(**user.__dict__)
 
 
 async def get_all_users(session: Annotated[AsyncSession, Depends(get_async_session)]):

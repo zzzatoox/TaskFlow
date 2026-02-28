@@ -20,3 +20,7 @@ class TaskNotFoundException(Exception):
 
 class PriorityNotFoundException(Exception):
     pass
+
+
+class StatusNotFoundException(Exception):
+    pass

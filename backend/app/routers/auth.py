@@ -1,5 +1,5 @@
 # from backend.app.models.users import User
-from backend.app.schemas.users import User
+# from backend.app.schemas.users import User
 from fastapi import APIRouter, Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordRequestForm
 from backend.app.schemas.tokens import Token

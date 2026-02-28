@@ -1,11 +1,12 @@
 from fastapi import APIRouter
 from backend.app.dependencies import SessionDep
 
-from backend.app.schemas.priorities import PriorityCreate
+from backend.app.schemas.priorities import PriorityCreate, PriorityUpdate
 from backend.app.services.priorities import (
     add_priority,
     get_all_priorities,
     get_priority_by_id,
+    update_priority as update_priority_service,
 )
 
 
@@ -29,4 +30,12 @@ async def get_priority(priority_id: int, session: SessionDep):
 @router.post("/priorities")
 async def create_priority(priority_obj: PriorityCreate, session: SessionDep):
     priority = await add_priority(priority_obj, session)
+    return priority
+
+
+@router.put("/priorities/{priority_id}")
+async def update_priority(
+    priority_id: int, priority_obj: PriorityUpdate, session: SessionDep
+):
+    priority = await update_priority_service(priority_id, priority_obj, session)
     return priority

@@ -6,12 +6,18 @@ from .models.users import Base
 from .dependencies import SessionDep
 from .routers.users import router as user_router
 from .routers.auth import router as auth_router
+from .routers.tasks import router as tasks_router
+from .routers.priorities import router as priorities_router
+from .routers.statuses import router as statuses_router
 
 
 app = FastAPI()
 
 app.include_router(user_router)
 app.include_router(auth_router)
+app.include_router(tasks_router)
+app.include_router(priorities_router)
+app.include_router(statuses_router)
 
 
 @app.get("/")

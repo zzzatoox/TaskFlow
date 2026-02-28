@@ -3,7 +3,6 @@ from datetime import datetime, timedelta, timezone
 import jwt
 
 from backend.app.dependencies import SessionDep
-from backend.app.schemas.users import UserInDB
 
 from backend.app.services.users import get_user
 from backend.app.utils.password_hashing import verify_password_async, DUMMY_HASH
@@ -11,9 +10,7 @@ from backend.app.utils.password_hashing import verify_password_async, DUMMY_HASH
 from backend.app.config import settings
 
 
-async def authenticate_user(
-    login: str, password: str, session: SessionDep
-) -> UserInDB | bool:
+async def authenticate_user(login: str, password: str, session: SessionDep):
     user = await get_user(login, session)
     if not user:
         await verify_password_async(password, DUMMY_HASH)

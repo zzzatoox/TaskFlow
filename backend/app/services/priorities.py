@@ -38,9 +38,10 @@ async def get_priority_by_id(
 
 
 async def add_priority(
-    title: PriorityCreate, session: Annotated[AsyncSession, Depends(get_async_session)]
+    priority_obj: PriorityCreate,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> PriorityModel:
-    priority = PriorityModel(title=title)
+    priority = PriorityModel(**priority_obj.model_dump())
     session.add(priority)
     try:
         await session.commit()
@@ -86,8 +87,13 @@ async def update_priority(
     priority = await get_priority_by_id(priority_id, session)
     if not priority:
         raise PriorityNotFoundException(f"Priority with id {priority_id} not found")
-    priority = await get_priority_by_title(new_title.title, session)
-    if priority:
+
+    # If no new title provided, nothing to update
+    if new_title.title is None:
+        return priority
+
+    existing = await get_priority_by_title(new_title.title, session)
+    if existing and existing.id != priority.id:
         raise InternalServerException(
             f"Priority with title {new_title.title} already exists"
         )
