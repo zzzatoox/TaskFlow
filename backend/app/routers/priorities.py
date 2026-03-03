@@ -7,6 +7,7 @@ from backend.app.services.priorities import (
     get_all_priorities,
     get_priority_by_id,
     update_priority as update_priority_service,
+    delete_priority as delete_priority_service,
 )
 
 
@@ -39,3 +40,9 @@ async def update_priority(
 ):
     priority = await update_priority_service(priority_id, priority_obj, session)
     return priority
+
+
+@router.delete("/priorities/{priority_id}")
+async def delete_priority(priority_id: int, session: SessionDep):
+    await delete_priority_service(priority_id, session)
+    return {"detail": "Priority deleted successfully"}

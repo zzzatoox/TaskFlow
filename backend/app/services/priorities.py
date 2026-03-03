@@ -11,6 +11,7 @@ from backend.app.models.priorities import Priority as PriorityModel
 from backend.app.schemas.priorities import PriorityCreate, PriorityUpdate
 from backend.app.utils.custom_exceptions import (
     InternalServerException,
+    PriorityAlreadyExistsException,
     PriorityNotFoundException,
 )
 
@@ -19,8 +20,6 @@ async def get_all_priorities(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     result = await session.scalars(select(PriorityModel))
-    if not result:
-        raise PriorityNotFoundException("No priorities found")
     return result.all()
 
 
@@ -42,6 +41,12 @@ async def add_priority(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> PriorityModel:
     priority = PriorityModel(**priority_obj.model_dump())
+    existing = await get_priority_by_title(priority.title, session)
+    if existing:
+        raise PriorityAlreadyExistsException(
+            f"Priority with title {priority.title} already exists"
+        )
+
     session.add(priority)
     try:
         await session.commit()
@@ -64,9 +69,7 @@ async def delete_priority(
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while deleting priority")
-    return HTTPException(
-        status_code=204, detail=f"Priority with id {priority_id} deleted"
-    )
+    return {"detail": f"Priority with id {priority_id} deleted successfully"}
 
 
 async def get_priority_by_title(
@@ -94,7 +97,7 @@ async def update_priority(
 
     existing = await get_priority_by_title(new_title.title, session)
     if existing and existing.id != priority.id:
-        raise InternalServerException(
+        raise PriorityAlreadyExistsException(
             f"Priority with title {new_title.title} already exists"
         )
 

@@ -10,6 +10,7 @@ from backend.app.dependencies import get_async_session
 from backend.app.models.tasks import Task as TaskModel
 
 from backend.app.schemas.tasks import TaskCreate, TaskUpdate
+from backend.app.services.statuses import get_status_by_id
 from backend.app.utils.custom_exceptions import TaskNotFoundException
 
 # TODO: посмотреть, можно ли объявить свой тип, чтобы сократить Annotated[AsyncSession, Depends(get_async_session)]
@@ -95,6 +96,21 @@ async def update_task(
         await session.rollback()
         raise InternalServerError("Unexpected error while updating task")
     return task
+
+
+async def delete_task(
+    task_id: int, session: Annotated[AsyncSession, Depends(get_async_session)]
+):
+    task = await get_task_by_id(task_id, session)
+    if not task:
+        raise TaskNotFoundException(f"Task with id {task_id} not found")
+    await session.delete(task)
+    try:
+        await session.commit()
+    except Exception:
+        await session.rollback()
+        raise InternalServerError("Unexpected error while deleting task")
+    return {"detail": f"Task with id {task_id} deleted successfully"}
 
 
 # TODO: добавить функции с фильтрацией.

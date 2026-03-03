@@ -6,6 +6,7 @@ from backend.app.services.statuses import (
     get_all_statuses,
     get_status_by_id,
     update_status as update_status_service,
+    delete_status as delete_status_service,
 )
 
 
@@ -36,3 +37,9 @@ async def create_status(status_obj: StatusCreate, session: SessionDep):
 async def update_status(status_id: int, status_obj: StatusUpdate, session: SessionDep):
     status = await update_status_service(status_id, status_obj, session)
     return status
+
+
+@router.delete("/statuses/{status_id}")
+async def delete_status(status_id: int, session: SessionDep):
+    await delete_status_service(status_id, session)
+    return {"detail": "Status deleted successfully"}

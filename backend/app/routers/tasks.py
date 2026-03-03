@@ -7,6 +7,7 @@ from backend.app.services.tasks import (
     create_task as create_task_service,
     get_task_by_id,
     update_task as update_task_service,
+    delete_task as delete_task_service,
 )
 
 router = APIRouter(
@@ -36,3 +37,9 @@ async def get_task(task_id: int, session: SessionDep):
 async def update_task(task_id: int, task_data: TaskUpdate, session: SessionDep):
     task = await update_task_service(task_id, task_data, session)
     return task
+
+
+@router.delete("/tasks/{task_id}")
+async def delete_task(task_id: int, session: SessionDep):
+    result = await delete_task_service(task_id, session)
+    return result

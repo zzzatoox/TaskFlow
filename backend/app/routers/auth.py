@@ -11,6 +11,7 @@ from backend.app.config import settings
 from backend.app.dependencies import SessionDep
 
 from backend.app.services.auth import authenticate_user, create_access_token
+from backend.app.utils.custom_exceptions import UnauthorizedException
 
 
 router = APIRouter(tags=["auth"])
@@ -23,11 +24,12 @@ async def login_for_access_token(
 ) -> Token:
     user = await authenticate_user(form_data.username, form_data.password, session)
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
+        raise UnauthorizedException()
+        # raise HTTPException(
+        #     status_code=status.HTTP_401_UNAUTHORIZED,
+        #     detail="Incorrect username or password",
+        #     headers={"WWW-Authenticate": "Bearer"},
+        # )
     access_token_expires = timedelta(minutes=settings.ACCESS_TOKEN_EXPIRE_MINUTES)
     access_token = await create_access_token(
         data={"sub": user.login}, expires_delta=access_token_expires

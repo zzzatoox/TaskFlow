@@ -12,6 +12,7 @@ from backend.app.schemas.statuses import StatusCreate, StatusUpdate
 from backend.app.utils.custom_exceptions import (
     InternalServerException,
     StatusNotFoundException,
+    StatusAlreadyExistsException,
 )
 
 
@@ -19,8 +20,6 @@ async def get_all_statuses(
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
     result = await session.scalars(select(StatusModel))
-    if not result:
-        raise StatusNotFoundException("No statuses found")
     return result.all()
 
 
@@ -62,7 +61,7 @@ async def delete_status(
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while deleting status")
-    return HTTPException(status_code=204, detail=f"Status with id {status_id} deleted")
+    return {"detail": f"Status with id {status_id} deleted successfully"}
 
 
 async def get_status_by_title(
@@ -90,7 +89,7 @@ async def update_status(
 
     existing = await get_status_by_title(new_title.title, session)
     if existing and existing.id != status.id:
-        raise InternalServerException(
+        raise StatusAlreadyExistsException(
             f"Status with title {new_title.title} already exists"
         )
 

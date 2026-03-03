@@ -12,6 +12,7 @@ from fastapi import HTTPException, status
 
 from backend.app.utils.custom_exceptions import (
     IntegrityErrorException,
+    UnauthorizedException,
     UserAlreadyExistsException,
     InternalServerException,
     UserNotFoundException,
@@ -38,14 +39,17 @@ async def get_user(
 
 
 async def get_current_user(
-    token: Annotated[str, Depends(oauth2_scheme)],
+    token: Annotated[str | None, Depends(oauth2_scheme)],
     session: Annotated[AsyncSession, Depends(get_async_session)],
-) -> UserResponse | HTTPException:
+) -> UserResponse:
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Could not validate credentials",
         headers={"WWW-Authenticate": "Bearer"},
     )
+
+    if not token:
+        raise UnauthorizedException(detail="Token is missing")
 
     try:
         payload = jwt.decode(
@@ -66,7 +70,7 @@ async def get_current_user(
 async def get_all_users(session: Annotated[AsyncSession, Depends(get_async_session)]):
     result = await session.scalars(select(UserModel))
     if not result:
-        raise UserNotFoundException("No users found")
+        raise UserNotFoundException()
     return result.all()
 
 
@@ -77,7 +81,7 @@ async def get_user_by_id(
         await session.scalars(select(UserModel).where(UserModel.id == user_id))
     ).first()
     if not user:
-        raise UserNotFoundException("User not found")
+        raise UserNotFoundException()
     return user
 
 
@@ -92,13 +96,13 @@ async def create_user(
         select(UserModel).where(UserModel.email == user_data["email"])
     )
     if existing.scalar_one_or_none():
-        raise UserAlreadyExistsException("User with this email already exists")
+        raise UserAlreadyExistsException()
 
     existing = await session.execute(
         select(UserModel).where(UserModel.login == user_data["login"])
     )
     if existing.scalar_one_or_none():
-        raise UserAlreadyExistsException("User with this login already exists")
+        raise UserAlreadyExistsException()
 
     user = UserModel(**user_data, password_hash=password_hash)
     session.add(user)
