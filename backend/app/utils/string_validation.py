@@ -13,7 +13,7 @@ def password_match(pwd: str, pwd_confirm: str) -> bool:
 
 
 def password_validation(pwd: str) -> bool:
-    SpecialSym = ["$", "@", "#", "%"]
+    SpecialSym = "!@#$%^&*()-+"
 
     if not any(char.isupper() for char in pwd):
         raise ValueError("Password should have at least one uppercase letter")
