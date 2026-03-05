@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta, timezone
+import uuid
 
 import jwt
 
@@ -24,11 +25,18 @@ async def create_access_token(
     data: dict, expires_delta: timedelta | None = None
 ) -> str:
     to_encode = data.copy()
+    now = datetime.now(timezone.utc)
     if expires_delta:
-        expire = datetime.now(timezone.utc) + expires_delta
+        expire_dt = now + expires_delta
     else:
-        expire = datetime.now(timezone.utc) + timedelta(minutes=15)
-    to_encode.update({"exp": expire})
+        expire_dt = now + timedelta(minutes=15)
+    to_encode.update(
+        {
+            "exp": int(expire_dt.timestamp()),
+            "iat": int(now.timestamp()),
+            "jti": str(uuid.uuid4()),
+        }
+    )
     encoded_jwt = jwt.encode(
         to_encode, settings.SECRET_KEY, algorithm=settings.ALGORITHM
     )
