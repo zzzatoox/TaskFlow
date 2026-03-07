@@ -14,6 +14,8 @@ router = APIRouter(
     tags=["tasks"],
 )
 
+# TODO: сделать ручки доступные только после авторизации
+
 
 @router.get("/tasks")
 async def get_tasks(session: SessionDep):
