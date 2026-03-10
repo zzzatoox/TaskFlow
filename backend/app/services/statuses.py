@@ -1,9 +1,11 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
-from fastapi import Depends, HTTPException
+from fastapi import Depends
 
 from typing import Annotated
+
+from sqlalchemy.exc import IntegrityError
 
 from backend.app.dependencies import get_async_session
 from backend.app.models.statuses import Status as StatusModel
@@ -13,6 +15,7 @@ from backend.app.utils.custom_exceptions import (
     InternalServerException,
     StatusNotFoundException,
     StatusAlreadyExistsException,
+    IntegrityErrorException,
 )
 
 
@@ -38,11 +41,17 @@ async def add_status(
     status_obj: StatusCreate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ) -> StatusModel:
+    existing = await get_status_by_title(status_obj.title, session)
+    if existing:
+        raise StatusAlreadyExistsException()
     status = StatusModel(**status_obj.model_dump())
     session.add(status)
     try:
         await session.commit()
         await session.refresh(status)
+    except IntegrityError:
+        await session.rollback()
+        raise IntegrityErrorException("Database integrity error")
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while adding status")
@@ -58,6 +67,9 @@ async def delete_status(
     await session.delete(status)
     try:
         await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise IntegrityErrorException("Database integrity error")
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while deleting status")
@@ -67,10 +79,10 @@ async def delete_status(
 async def get_status_by_title(
     title: str, session: Annotated[AsyncSession, Depends(get_async_session)]
 ) -> StatusModel | None:
-    status = (
-        await session.scalars(select(StatusModel).where(StatusModel.title == title))
-    ).first()
-    return status
+    status = await session.execute(
+        select(StatusModel).where(StatusModel.title == title)
+    )
+    return status.one_or_none()
 
 
 async def update_status(
@@ -78,13 +90,11 @@ async def update_status(
     new_title: StatusUpdate,
     session: Annotated[AsyncSession, Depends(get_async_session)],
 ):
-    # TODO: подумать, нужно ли делать проверку, если все поля None, то не обновлять, а возвращать ошибку.
     status = await get_status_by_id(status_id, session)
     if not status:
         raise StatusNotFoundException(f"Status with id {status_id} not found")
 
-    # If no new title provided, nothing to update
-    if new_title.title is None:
+    if new_title.title is None or new_title.title == status.title:
         return status
 
     existing = await get_status_by_title(new_title.title, session)
@@ -97,6 +107,9 @@ async def update_status(
     try:
         await session.commit()
         await session.refresh(status)
+    except IntegrityError:
+        await session.rollback()
+        raise IntegrityErrorException("Database integrity error")
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while updating status")

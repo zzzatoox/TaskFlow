@@ -86,6 +86,9 @@ async def update_task(
     try:
         await session.commit()
         await session.refresh(task)
+    except IntegrityError:
+        await session.rollback()
+        raise IntegrityErrorException("Database integrity error")
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while updating task")
@@ -109,6 +112,9 @@ async def delete_task(
     await session.delete(task)
     try:
         await session.commit()
+    except IntegrityError:
+        await session.rollback()
+        raise IntegrityErrorException("Database integrity error")
     except Exception:
         await session.rollback()
         raise InternalServerException("Unexpected error while deleting task")
