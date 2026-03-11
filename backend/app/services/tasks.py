@@ -6,6 +6,8 @@ from fastapi import Depends
 
 from typing import Annotated
 
+from datetime import datetime
+
 from backend.app.dependencies import get_async_session
 from backend.app.models.tasks import Task as TaskModel
 
@@ -21,13 +23,32 @@ from backend.app.utils.custom_exceptions import (
 # TODO: посмотреть, можно ли объявить свой тип, чтобы сократить Annotated[AsyncSession, Depends(get_async_session)]
 
 
-# TODO: сделать пагинацию задач
 async def get_all_tasks(
-    user_id: int, session: Annotated[AsyncSession, Depends(get_async_session)]
+    user_id: int,
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    skip: int = 5,
+    limit: int = 10,
+    status: str | None = None,
+    priority: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
 ):
-    result = await session.scalars(
-        select(TaskModel).where(TaskModel.owner_id == user_id)
-    )
+    query = select(TaskModel).where(TaskModel.owner_id == user_id)
+
+    if start_date and end_date:
+        query = query.where(TaskModel.created_at.between(start_date, end_date))
+    elif start_date and not end_date:
+        query = query.where(TaskModel.created_at >= start_date)
+    else:
+        query = query.where(TaskModel.created_at <= end_date)
+
+    if status:
+        query = query.where(TaskModel.status == status)
+    if priority:
+        query = query.where(TaskModel.priority == priority)
+
+    query = query.order_by(TaskModel.id).offset(skip).limit(limit)
+    result = await session.scalars(query)
     return result.all()
 
 

@@ -27,6 +27,8 @@ async def get_user_by_id(user_id: int, session: SessionDep) -> UserResponse:
 
 
 @router.get("/users")
-async def get_users(session: SessionDep) -> list[UserResponse]:
-    result = await get_all_users(session)
+async def get_users(
+    session: SessionDep, skip: int = 0, limit: int = 10
+) -> list[UserResponse]:
+    result = await get_all_users(session, skip, limit)
     return result

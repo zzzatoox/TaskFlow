@@ -41,13 +41,13 @@ async def test_get_me(client: AsyncClient):
 
 @pytest.mark.anyio
 async def test_get_all_users(client: AsyncClient):
-    await create_user_and_get_token(client)
-    await create_user_and_get_token(client)
+    for _ in range(15):
+        await create_user_and_get_token(client)
 
-    all_users_response = await client.get("/users")
+    all_users_response = await client.get("/users", params={"skip": 0, "limit": 10})
     users_list = all_users_response.json()
 
-    assert len(users_list) == 2
+    assert len(users_list) == 10
 
 
 @pytest.mark.anyio

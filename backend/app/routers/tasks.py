@@ -10,16 +10,34 @@ from backend.app.services.tasks import (
     delete_task as delete_task_service,
 )
 
+from datetime import datetime
+
 router = APIRouter(
     tags=["tasks"],
 )
 
-# TODO: сделать ручки доступные только после авторизации
-
 
 @router.get("/tasks")
-async def get_tasks(user: UserDep, session: SessionDep):
-    tasks = await get_all_tasks(user.id, session)
+async def get_tasks(
+    user: UserDep,
+    session: SessionDep,
+    skip: int = 0,
+    limit: int = 10,
+    status: str | None = None,
+    priority: str | None = None,
+    start_date: datetime | None = None,
+    end_date: datetime | None = None,
+):
+    tasks = await get_all_tasks(
+        user.id,
+        session,
+        skip=skip,
+        limit=limit,
+        status=status,
+        priority=priority,
+        start_date=start_date,
+        end_date=end_date,
+    )
     return tasks
 
 

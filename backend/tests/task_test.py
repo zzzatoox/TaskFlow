@@ -1,6 +1,10 @@
 import pytest
 from httpx import AsyncClient
-from backend.tests.utils import create_user_and_get_token
+from backend.tests.utils import (
+    create_user_and_get_token,
+    create_priority,
+    create_status,
+)
 
 TEST_USER_DATA = {
     "login": "test",
@@ -40,18 +44,28 @@ async def test_get_all_tasks(client: AsyncClient):
     status_response = await client.post("/statuses", json={"title": "Открыт"})
     assert status_response.status_code == 200
 
+    # TODO: добавить тесты на проверку фильтрации (по статусу, приоритету, даты)
+
     task_response = await client.post("/tasks", json=TEST_TASK_DATA)
     assert task_response.status_code == 401
-    task_response = await client.post(
-        "/tasks", headers=user["headers"], json=TEST_TASK_DATA
-    )
-    assert task_response.status_code == 200
+
+    for _ in range(15):
+        task_response = await client.post(
+            "/tasks", headers=user["headers"], json=TEST_TASK_DATA
+        )
 
     tasks_response = await client.get("/tasks", headers=user["headers"])
     assert tasks_response.status_code == 200
 
     tasks_data = tasks_response.json()
-    assert len(tasks_data) == 1
+    assert len(tasks_data) == 10
+
+    task_response = await client.get(
+        "/tasks", headers=user["headers"], params={"skip": 10, "limit": 10}
+    )
+    tasks_data = task_response.json()
+
+    assert len(tasks_data) <= 10
 
 
 @pytest.mark.anyio

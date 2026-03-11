@@ -67,8 +67,12 @@ async def get_current_user(
     return UserResponse(**user.__dict__)
 
 
-async def get_all_users(session: Annotated[AsyncSession, Depends(get_async_session)]):
-    result = await session.scalars(select(UserModel))
+async def get_all_users(
+    session: Annotated[AsyncSession, Depends(get_async_session)],
+    skip: int = 0,
+    limit: int = 10,
+):
+    result = await session.scalars(select(UserModel).offset(skip).limit(limit))
     if not result:
         raise UserNotFoundException()
     return result.all()
