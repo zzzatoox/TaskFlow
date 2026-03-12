@@ -37,6 +37,7 @@ async def create_user_and_get_token(
     return {"user": user, "token": token_data["access_token"], "headers": headers}
 
 
+# Держать во внимании, что эти ф-ии могут создавать уже существующие приоритеты и статусы, что может возвращать ошибки
 async def create_priority(client: AsyncClient, priority: str | None = None):
     priorities = ["Низкий", "Средний", "Высокий", "Блокирующий"]
     create_response = await client.post(

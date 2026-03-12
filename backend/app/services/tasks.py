@@ -6,7 +6,7 @@ from fastapi import Depends
 
 from typing import Annotated
 
-from datetime import datetime
+from datetime import datetime, timezone
 
 from backend.app.dependencies import get_async_session
 from backend.app.models.tasks import Task as TaskModel
@@ -26,7 +26,7 @@ from backend.app.utils.custom_exceptions import (
 async def get_all_tasks(
     user_id: int,
     session: Annotated[AsyncSession, Depends(get_async_session)],
-    skip: int = 5,
+    skip: int = 0,
     limit: int = 10,
     status: str | None = None,
     priority: str | None = None,
@@ -35,11 +35,17 @@ async def get_all_tasks(
 ):
     query = select(TaskModel).where(TaskModel.owner_id == user_id)
 
+    if start_date and start_date.tzinfo is None:
+        start_date = start_date.replace(tzinfo=timezone.utc)
+
+    if end_date and end_date.tzinfo is None:
+        end_date = end_date.replace(tzinfo=timezone.utc)
+
     if start_date and end_date:
         query = query.where(TaskModel.created_at.between(start_date, end_date))
-    elif start_date and not end_date:
+    elif start_date:
         query = query.where(TaskModel.created_at >= start_date)
-    else:
+    elif end_date:
         query = query.where(TaskModel.created_at <= end_date)
 
     if status:

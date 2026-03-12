@@ -1,10 +1,7 @@
 import pytest
 from httpx import AsyncClient
-from backend.tests.utils import (
-    create_user_and_get_token,
-    create_priority,
-    create_status,
-)
+from datetime import datetime, timedelta, timezone
+from backend.tests.utils import create_user_and_get_token
 
 TEST_USER_DATA = {
     "login": "test",
@@ -27,6 +24,18 @@ TEST_USER_DATA2 = {
 }
 
 TEST_TASK_DATA = {"title": "test", "owner_id": 1, "priority_id": 1, "status_id": 1}
+priorities = ["Низкий", "Средний", "Высокий", "Блокирующий"]
+statuses = [
+    "Открыт",
+    "Добавлен в план",
+    "Информация получена",
+    "В работе",
+    "Ожидаем информацию",
+    "Грумминг",
+    "Предварительная модерация",
+    "Демонстрация заказчику",
+    "Закрыт",
+]
 
 
 @pytest.mark.anyio
@@ -43,8 +52,6 @@ async def test_get_all_tasks(client: AsyncClient):
 
     status_response = await client.post("/statuses", json={"title": "Открыт"})
     assert status_response.status_code == 200
-
-    # TODO: добавить тесты на проверку фильтрации (по статусу, приоритету, даты)
 
     task_response = await client.post("/tasks", json=TEST_TASK_DATA)
     assert task_response.status_code == 401
@@ -66,6 +73,47 @@ async def test_get_all_tasks(client: AsyncClient):
     tasks_data = task_response.json()
 
     assert len(tasks_data) <= 10
+
+    priority_response2 = await client.post("/priorities", json={"title": "Средний"})
+    assert priority_response2.status_code == 200
+    pr2 = priority_response2.json()
+
+    status_response2 = await client.post("/statuses", json={"title": "В работе"})
+    assert status_response2.status_code == 200
+    st2 = status_response2.json()
+
+    new_task = {
+        "title": "filter_test",
+        "owner_id": 1,
+        "priority_id": pr2["id"],
+        "status_id": st2["id"],
+    }
+    task_response = await client.post("/tasks", headers=user["headers"], json=new_task)
+    assert task_response.status_code == 200
+    created_task = task_response.json()
+
+    tasks_by_priority = await client.get(
+        "/tasks", headers=user["headers"], params={"priority": pr2["title"]}
+    )
+    assert tasks_by_priority.status_code == 200
+    tasks_by_priority_data = tasks_by_priority.json()
+    assert any(t["id"] == created_task["id"] for t in tasks_by_priority_data)
+
+    tasks_by_status = await client.get(
+        "/tasks", headers=user["headers"], params={"status": st2["title"]}
+    )
+    assert tasks_by_status.status_code == 200
+    tasks_by_status_data = tasks_by_status.json()
+    assert any(t["id"] == created_task["id"] for t in tasks_by_status_data)
+
+    start = (datetime.now(timezone.utc) - timedelta(minutes=1)).isoformat()
+    end = (datetime.now(timezone.utc) + timedelta(minutes=1)).isoformat()
+    tasks_by_date = await client.get(
+        "/tasks", headers=user["headers"], params={"start_date": start, "end_date": end}
+    )
+    assert tasks_by_date.status_code == 200
+    tasks_by_date_data = tasks_by_date.json()
+    assert any(t["id"] == created_task["id"] for t in tasks_by_date_data)
 
 
 @pytest.mark.anyio
