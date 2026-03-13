@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Request, status, HTTPException
 from fastapi.responses import JSONResponse
+import traceback
 from .database import engine
 from .models.users import Base
 
@@ -24,8 +25,12 @@ async def validation_exception_handler(request: Request, exc: DomainException):
 
 @app.exception_handler(Exception)
 async def unexcpected_exception_handler(request: Request, exc: Exception):
-    print(f"Unexcpected error: {exc}")
-    return JSONResponse(content={"detail": "Internal server error"}, status_code=500)
+    tb = traceback.format_exc()
+    print(tb)
+    return JSONResponse(
+        content={"detail": "Internal server error"},
+        status_code=500,
+    )
 
 
 app.include_router(user_router)

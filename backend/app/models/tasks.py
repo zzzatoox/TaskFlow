@@ -1,4 +1,4 @@
-from sqlalchemy import String, ForeignKey, func, Integer
+from sqlalchemy import String, ForeignKey, func, Integer, DateTime
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from ..database import Base
@@ -16,10 +16,12 @@ class Task(Base):
     executor_id: Mapped[int | None] = mapped_column(ForeignKey("users.id"))
     priority_id: Mapped[int] = mapped_column(ForeignKey("priorities.id"))
     status_id: Mapped[int] = mapped_column(ForeignKey("statuses.id"))
-    deadline: Mapped[datetime | None]
-    created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), server_default=func.now()
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        server_default=func.now(), onupdate=func.now()
+        DateTime(timezone=True), server_default=func.now(), onupdate=func.now()
     )
 
     owner: Mapped["User"] = relationship(

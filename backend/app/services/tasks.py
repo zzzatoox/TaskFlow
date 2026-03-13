@@ -6,7 +6,7 @@ from fastapi import Depends
 
 from typing import Annotated
 
-from datetime import datetime, timezone
+from datetime import datetime
 
 from backend.app.dependencies import get_async_session
 from backend.app.models.tasks import Task as TaskModel
@@ -18,9 +18,29 @@ from backend.app.utils.custom_exceptions import (
     TaskAccessDeniedException,
     IntegrityErrorException,
     InternalServerException,
+    ValidationException,
 )
 
+
 # TODO: посмотреть, можно ли объявить свой тип, чтобы сократить Annotated[AsyncSession, Depends(get_async_session)]
+def ensure_timezone_aware(value: datetime | None, field_name: str) -> None:
+    if value is None:
+        return
+
+    if value.tzinfo is None or value.utcoffset() is None:
+        raise ValidationException(
+            f"{field_name} must include timezone, for example 2026-03-13T12:00:00Z"
+        )
+
+
+def validate_task_date_range(
+    start_date: datetime | None,
+    end_date: datetime | None,
+) -> None:
+    if start_date and end_date and start_date > end_date:
+        raise ValidationException(
+            "start_date must be earlier than or equal to end_date"
+        )
 
 
 async def get_all_tasks(
@@ -33,13 +53,11 @@ async def get_all_tasks(
     start_date: datetime | None = None,
     end_date: datetime | None = None,
 ):
+    ensure_timezone_aware(start_date, "start_date")
+    ensure_timezone_aware(end_date, "end_date")
+    validate_task_date_range(start_date, end_date)
+
     query = select(TaskModel).where(TaskModel.owner_id == user_id)
-
-    if start_date and start_date.tzinfo is None:
-        start_date = start_date.replace(tzinfo=timezone.utc)
-
-    if end_date and end_date.tzinfo is None:
-        end_date = end_date.replace(tzinfo=timezone.utc)
 
     if start_date and end_date:
         query = query.where(TaskModel.created_at.between(start_date, end_date))
@@ -49,9 +67,9 @@ async def get_all_tasks(
         query = query.where(TaskModel.created_at <= end_date)
 
     if status:
-        query = query.where(TaskModel.status == status)
+        query = query.where(TaskModel.status.has(title=status))
     if priority:
-        query = query.where(TaskModel.priority == priority)
+        query = query.where(TaskModel.priority.has(title=priority))
 
     query = query.order_by(TaskModel.id).offset(skip).limit(limit)
     result = await session.scalars(query)
