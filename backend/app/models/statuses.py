@@ -9,9 +9,5 @@ class Status(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(50), unique=True)
 
-    tasks: Mapped[list["Task"]] = relationship(
-        "Task", back_populates="status", foreign_keys="[Task.status_id]"
-    )
-
     def __repr__(self) -> str:
         return f"Status(id={self.id!r}, title={self.title!r})"

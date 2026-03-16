@@ -30,9 +30,12 @@ class Task(Base):
     executor: Mapped["User"] = relationship(
         "User", back_populates="assigned_tasks", foreign_keys=[executor_id]
     )
+    comments: Mapped[list["Comment"]] = relationship(
+        "Comment", back_populates="task", lazy="selectin"
+    )
 
-    priority: Mapped["Priority"] = relationship("Priority", back_populates="tasks")
-    status: Mapped["Status"] = relationship("Status", back_populates="tasks")
+    priority: Mapped["Priority"] = relationship()
+    status: Mapped["Status"] = relationship()
 
     def __repr__(self) -> str:
         return f"Task(id={self.id!r}, title={self.title!r})"

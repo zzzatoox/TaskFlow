@@ -86,7 +86,7 @@ async def get_task_by_id(
     ).first()
     if not task:
         raise TaskNotFoundException(f"Task with id {task_id} not found")
-    if task.owner_id != user_id:
+    if task.owner_id != user_id and task.executor_id != user_id:
         raise TaskAccessDeniedException(
             f"User with id {user_id} does not have permission to access task with id {task_id}"
         )

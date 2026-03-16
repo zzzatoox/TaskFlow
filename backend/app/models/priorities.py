@@ -11,9 +11,5 @@ class Priority(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     title: Mapped[str] = mapped_column(String(50), unique=True)
 
-    tasks: Mapped[List["Task"]] = relationship(
-        "Task", back_populates="priority", foreign_keys="[Task.priority_id]"
-    )
-
     def __repr__(self):
         return f"Priority(id={self.id!r}, title={self.title!r})"

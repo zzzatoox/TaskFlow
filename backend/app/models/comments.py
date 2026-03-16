@@ -24,9 +24,7 @@ class Comment(Base):
     task: Mapped["Task"] = relationship(
         "Task", back_populates="comments", foreign_keys=[task_id]
     )
-    owner: Mapped["User"] = relationship(
-        "User", back_populates="comments", foreign_keys=[user_id]
-    )
+    author: Mapped["User"] = relationship()
 
     def __repr__(self) -> str:
         text = (self.comment or "").replace("\n", " ")
