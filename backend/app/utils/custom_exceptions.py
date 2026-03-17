@@ -71,5 +71,13 @@ class StatusNotFoundException(NotFoundException):
     detail = "Status not found"
 
 
+class CommentNotFoundException(NotFoundException):
+    detail = "Comment not found"
+
+
 class TaskAccessDeniedException(ForbiddenException):
     detail = "You do not have permission to perform this action on the task"
+
+
+class CommentAccessDeniedException(ForbiddenException):
+    detail = "You do not have permission to perform this action on the comment"

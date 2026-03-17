@@ -2,7 +2,7 @@ from fastapi import APIRouter
 
 from backend.app.dependencies import SessionDep, UserDep
 
-from backend.app.schemas.comments import CommentCreate
+from backend.app.schemas.comments import CommentCreate, CommentUpdate
 from backend.app.services.comments import get_comments_by_task, add_comment_to_task
 
 router = APIRouter(tags=["comments"])
@@ -20,3 +20,25 @@ async def add_comment(
 ):
     comment = await add_comment_to_task(task_id, user.id, content, session)
     return comment
+
+
+@router.put("tasks/{task_id}/comments/{comment_id}")
+async def update_comment(
+    task_id: int,
+    comment_id: int,
+    comment_obj: CommentUpdate,
+    user: UserDep,
+    session: SessionDep,
+):
+    comment = await update_comment_service(
+        task_id, comment_id, comment_obj, user.id, session
+    )
+    return comment
+
+
+@router.delete("/tasks/{task_id}/comments/{comment_id}")
+async def delete_comment(
+    task_id: int, comment_id: int, user: UserDep, session: SessionDep
+):
+    await delete_comment_service(task_id, comment_id, user.id, session)
+    return {"detail": "Comment deleted successfully"}
