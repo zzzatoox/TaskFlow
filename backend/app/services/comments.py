@@ -34,7 +34,7 @@ async def add_comment_to_task(
     session: Annotated[AsyncEngine, Depends(get_async_session)],
 ):
     task = await get_task_by_id(task_id, user_id, session)
-    comment = CommentModel(comment=content.content, task_id=task_id, author_id=user_id)
+    comment = CommentModel(comment=content.content, task_id=task_id, user_id=user_id)
     session.add(comment)
     await session.commit()
     await session.refresh(comment)

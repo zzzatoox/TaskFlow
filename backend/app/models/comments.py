@@ -7,7 +7,7 @@ import textwrap
 
 
 class Comment(Base):
-    __table_name__ = "comments"
+    __tablename__ = "comments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     # Не буду делать ограничение на длину текста в бд, сделаю на уровне бэка

@@ -66,3 +66,23 @@ async def create_status(client: AsyncClient, status: str | None = None):
     )
     assert create_response.status_code == 200
     return create_response.json()
+
+
+async def create_task(
+    client: AsyncClient, headers: dict[str, str] | None = None, **task_data
+):
+    rand_uuid = str(uuid4())[:8]
+    priority = await create_priority(client)
+    status = await create_status(client)
+    random_data = {
+        "title": f"task#{rand_uuid}",
+        "priority_id": priority["id"],
+        "status_id": status["id"],
+    }
+    random_data.update(task_data)
+    if headers is None:
+        user = await create_user_and_get_token(client)
+        headers = user["headers"]
+    create_response = await client.post("/tasks", headers=headers, json=random_data)
+    assert create_response.status_code == 200
+    return create_response.json()
