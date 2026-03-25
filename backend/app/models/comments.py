@@ -11,7 +11,7 @@ class Comment(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True)
     # Не буду делать ограничение на длину текста в бд, сделаю на уровне бэка
-    comment: Mapped[str] = mapped_column(Text)
+    content: Mapped[str] = mapped_column("comment", Text)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now()
     )
@@ -27,6 +27,6 @@ class Comment(Base):
     author: Mapped["User"] = relationship()
 
     def __repr__(self) -> str:
-        text = (self.comment or "").replace("\n", " ")
+        text = (self.content or "").replace("\n", " ")
         short = textwrap.shorten(text, width=60, placeholder="...")
-        return f"Comment(id={self.id!r}, comment={short!r})"
+        return f"Comment(id={self.id!r}, content={short!r})"

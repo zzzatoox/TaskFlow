@@ -8,14 +8,57 @@ from backend.app.database import get_async_session
 
 from backend.app.schemas.comments import CommentCreate, CommentUpdate
 from backend.app.services.tasks import get_task_by_id
+from backend.app.models.tasks import Task as TaskModel
 
 from backend.app.models.comments import Comment as CommentModel
 from backend.app.utils.custom_exceptions import (
     CommentNotFoundException,
+    TaskNotFoundException,
     IntegrityErrorException,
     InternalServerException,
     CommentAccessDeniedException,
 )
+
+
+def _can_access_comment(task: TaskModel, comment: CommentModel, user_id: int) -> bool:
+    # TODO: добавить наблюдателей здесь, когда появятся
+    return (
+        comment.user_id == user_id
+        or task.owner_id == user_id
+        or task.executor_id == user_id
+    )
+
+
+async def _get_task_or_404(
+    task_id: int,
+    session: Annotated[AsyncEngine, Depends(get_async_session)],
+) -> TaskModel:
+    task = (
+        await session.scalars(select(TaskModel).where(TaskModel.id == task_id))
+    ).first()
+    if not task:
+        raise TaskNotFoundException(f"Task with id {task_id} not found")
+    return task
+
+
+async def _get_task_comment_or_404(
+    task_id: int,
+    comment_id: int,
+    session: Annotated[AsyncEngine, Depends(get_async_session)],
+) -> CommentModel:
+    comment = (
+        await session.scalars(
+            select(CommentModel).where(
+                CommentModel.id == comment_id,
+                CommentModel.task_id == task_id,
+            )
+        )
+    ).first()
+    if not comment:
+        raise CommentNotFoundException(
+            f"Comment with id {comment_id} for task with id {task_id} not found"
+        )
+    return comment
 
 
 async def get_comments_by_task(
@@ -33,8 +76,8 @@ async def add_comment_to_task(
     content: CommentCreate,
     session: Annotated[AsyncEngine, Depends(get_async_session)],
 ):
-    task = await get_task_by_id(task_id, user_id, session)
-    comment = CommentModel(comment=content.content, task_id=task_id, user_id=user_id)
+    await get_task_by_id(task_id, user_id, session)
+    comment = CommentModel(content=content.content, task_id=task_id, user_id=user_id)
     session.add(comment)
     await session.commit()
     await session.refresh(comment)
@@ -42,15 +85,18 @@ async def add_comment_to_task(
 
 
 async def get_comment_by_id(
-    comment_id: int, session: Annotated[AsyncEngine, Depends(get_async_session)]
+    task_id: int,
+    comment_id: int,
+    user_id: int,
+    session: Annotated[AsyncEngine, Depends(get_async_session)],
 ):
-    comment = (
-        await session.scalars(select(CommentModel).where(CommentModel.id == comment_id))
-    ).first()
-    if not comment:
-        raise CommentNotFoundException(f"Comment with id {comment_id} not found")
+    task = await _get_task_or_404(task_id, session)
+    comment = await _get_task_comment_or_404(task_id, comment_id, session)
 
-    # TODO: нужно ли здесь делать проверку на владельца комментария?
+    if not _can_access_comment(task, comment, user_id):
+        raise CommentAccessDeniedException(
+            f"User with id {user_id} does not have permission to access comment with id {comment_id}"
+        )
 
     return comment
 
@@ -62,11 +108,17 @@ async def update_comment(
     user_id: int,
     session: Annotated[AsyncEngine, Depends(get_async_session)],
 ):
-    task = await get_task_by_id(task_id, session)
-    comment = await get_comment_by_id(comment_id, session)
+    task = await _get_task_or_404(task_id, session)
+    comment = await _get_task_comment_or_404(task_id, comment_id, session)
 
-    for key, value in comment_data.model_dump(exclude_unset=True).items():
-        setattr(comment, key, value)
+    if not _can_access_comment(task, comment, user_id):
+        raise CommentAccessDeniedException(
+            f"User with id {user_id} does not have permission to update comment with id {comment_id}"
+        )
+
+    payload = comment_data.model_dump(exclude_unset=True)
+    if "content" in payload:
+        comment.content = payload["content"]
 
     try:
         await session.commit()
@@ -86,10 +138,10 @@ async def delete_comment(
     user_id: int,
     session: Annotated[AsyncEngine, Depends(get_async_session)],
 ):
-    task = await get_task_by_id(task_id, session)
-    comment = await get_comment_by_id(comment_id, session)
+    task = await _get_task_or_404(task_id, session)
+    comment = await _get_task_comment_or_404(task_id, comment_id, session)
 
-    if comment.author.id != user_id and task.owner.id != user_id:
+    if not _can_access_comment(task, comment, user_id):
         raise CommentAccessDeniedException(
             f"User with id {user_id} does not have permission to delete comment with id {comment_id}"
         )
